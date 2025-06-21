@@ -26,6 +26,8 @@ const[showEventPopup,setShowEventPopup] = useState(false)
 const[events,setEvents] = useState([])
 const[eventTime,setEventTime] = useState({hours : '00' , minutes:'00'})
 const[eventText,setEventText] = useState('')
+const[editingEvent,setEditingEvent] = useState(null)
+
 
 
 
@@ -53,6 +55,7 @@ const handleDayClick = (day) => {
     setShowEventPopup(true)
     setEventTime({hours:'00',minutes:'00'})
     setEventText('')
+    setEditingEvent(null)
 
   }
 }
@@ -67,21 +70,57 @@ const isSameDay = (date1,date2) => {
 
 const handleEventSubmit = ()=> {
   const newEvent = {
+    id:editingEvent ? editingEvent.id : Date.now(),
     date: selectedDate,
     time:`${eventTime.hours.padStart(2,'0')}:${eventTime.minutes.padStart(2,'0')}`,
     text:eventText,
   }
-  setEvents([...events,newEvent])
+
+  let updatedEvents=[...events]
+
+  if(editingEvent){
+    updatedEvents = updatedEvents.map((event)=> event.id === editingEvent.id ? newEvent :event,)
+  }
+    else{
+      updatedEvents.push(newEvent)
+    }
+    updatedEvents.sort((a,b) => new Date(a.date)- new Date(b.date))
+  
+  setEvents(updatedEvents)
   setEventTime({hours:'00',minutes:'00'})
   setEventText('')
   setShowEventPopup(false)
+  setEditingEvent(null)
 }
 
+const handleEditEvent = (event) =>{
+  setSelectedDate(new Date(event.date))
+  setEventTime({
+    hours: event.time.split(':')[0],
+    minutes: event.time.split(':')[1],
+  })
+  setEventText(event.text)
+  setEditingEvent(event)
+  setShowEventPopup(true)
+}
 
+const handleDeleteEvent = (eventId) => {
+  const updatedEvents = events.filter((event) => event.id !== eventId)
+
+  setEvents(updatedEvents)
+
+}
+
+const handleTimeChange = (e) => {
+  const { name,value } =e.target
+
+  setEventTime((prevTime) => ({...prevTime,[name]:value.padStart(2,'0')}))
+}
   return (
     <div className='calendar-app'>
       <div className='calendar'>
         <h1 className='heading'>Calender</h1>
+        <h4 className='heading1'>On Clicking the date you can add Different Events, So Can You click the date ??</h4>
         <div className="navigate-date">
           <h2 className="month">{monthsOfYear[currentMonth]}</h2>
           <h2 className="year">{currentYear}</h2>
@@ -107,10 +146,10 @@ const handleEventSubmit = ()=> {
           <div className="time-input">
             <div className="event-popup-time">Time</div>
             <input type="number" name="hours" min={0} max={24} className="hours" value={eventTime.hours}
-            onChange={(e) => setEventTime({...eventTime,hours:e.target.value})}/>
+            onChange={handleTimeChange}/>
             
             <input type="number" name="mintues" min={0} max={60} className="minutes" value={eventTime.minutes}
-            onChange={(e) => setEventTime({...eventTime,mintues:e.target.value})}/>
+            onChange={handleTimeChange}/>
           </div>
           <textarea placeholder="Enter Event Text(Maximum 60 Characters)" value={eventText} onChange={(e) => {
             if(e.target.value.length<=60){
@@ -132,8 +171,8 @@ const handleEventSubmit = ()=> {
           </div>
           <div className="event-text">{event.text}</div>
           <div className="event-buttons">
-            <i className="bx bxs-edit-alt"></i>
-            <i className="bx bxs-message-alt-x"></i>
+            <i className="bx bxs-edit-alt" onClick={()=> handleEditEvent(event)}></i>
+            <i className="bx bxs-message-alt-x" onClick={()=> handleDeleteEvent(event.id)}></i>
           </div>
         </div>
 
